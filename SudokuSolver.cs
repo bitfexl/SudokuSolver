@@ -23,7 +23,16 @@ namespace Sudoku
 
         public SudokuGrid Solve()
         {
-            if (!findSolutionFor(0, 0))
+            if (!findSolutionFor(0, 0, false, grid => { }))
+            {
+                throw new SudokuNotSolvableException();
+            }
+            return _gridCopy;
+        }
+
+        public SudokuGrid Solve(Action<SudokuGrid> stepCallback)
+        {
+            if (!findSolutionFor(0, 0, true, stepCallback))
             {
                 throw new SudokuNotSolvableException();
             }
@@ -33,14 +42,27 @@ namespace Sudoku
         public SudokuGrid Solve(bool copyBack)
         {
             Solve();
-            if (copyBack)
-            {
-                _gridCopy.CopyTo(_grid);
-            }
+            copyGrid(copyBack);
             return _gridCopy;
         }
 
-        private bool findSolutionFor(int row, int col)
+        public SudokuGrid Solve(bool copyBack, Action<SudokuGrid> stepCallback)
+        {
+            Solve(stepCallback);
+            copyGrid(copyBack);
+            return _gridCopy;
+        }
+
+        private void copyGrid(bool copy)
+        {
+            if (copy)
+            {
+                _gridCopy.CopyTo(_grid);
+            }
+        }
+
+        // callback that gets called on each solution found, only if usecb == true
+        private bool findSolutionFor(int row, int col, bool usecb, Action<SudokuGrid> callback)
         {
             int nextrow = row, nextcol = col;
             bool nextSquareAvailable = getNextNumberBox(ref nextrow, ref nextcol);
@@ -51,10 +73,16 @@ namespace Sudoku
 
                 // validate ignoring empty fields
                 // if the current try is valid && (there are no more numberBoxes || the solution for the next numberBox is valid) return true
-                if (_copyValidator.Validate(true) && (!nextSquareAvailable || findSolutionFor(nextrow, nextcol)))
+                if (_copyValidator.Validate(true))
                 {
-                    return true;
-
+                    if (usecb)
+                    {
+                        callback(new SudokuGrid(_gridCopy));
+                    }
+                    if (!nextSquareAvailable || findSolutionFor(nextrow, nextcol, usecb, callback))
+                    {
+                        return true;
+                    }
                 } // else continue with the next possible number
             }
             // no number fits this square -> preveous number must be false or sudoku is not solvable -> return false
