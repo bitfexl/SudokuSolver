@@ -14,64 +14,84 @@ namespace test
 
         static void Main(string[] args)
         {
+            while (true)
+            {
+                Console.WriteLine();
+                Console.WriteLine(_leftSpacing + "1. Solve Sudoku");
+                Console.WriteLine(_leftSpacing + "2. Generate 15 Sudokus");
+                Console.WriteLine(_leftSpacing + "3. Generate (and solve) 5 Sudokus");
+                Console.WriteLine(_leftSpacing + "4. Exit");
+                Console.Write("\n" + _leftSpacing + "> ");
+
+                string input = Console.ReadLine();
+                Console.Clear();
+                switch (input)
+                {
+                    case "1": solveSudokuSlow(SudokuGenerator.Replace(SudokuGenerator.Generate(), _replacementValues[1])); break;
+                    case "2": printSudokus(15, false); break;
+                    case "3": printSudokus(5, true); break;
+                    case "4": return;
+                    default: continue;
+                }
+
+                Console.Write(_leftSpacing + "Press any key to continue...");
+                Console.ReadKey();
+                Console.Clear();
+            }
+        }
+
+        private static void printSudokus(int count, bool solve)
+        {
             Random random = new Random();
 
-            for (int i = 0; i < 10; i++)
+            for (int i = 0; i < count; i++)
             {
                 int replacementValue = _replacementValues[random.Next(0, 3)];
 
                 SudokuGrid solvedGeneratedGrid = SudokuGenerator.Generate();
                 SudokuGrid generatedGrid = SudokuGenerator.Replace(solvedGeneratedGrid, replacementValue);
-
-                SudokuPrinter printer = new SudokuPrinter(generatedGrid);
-                printer.LeftSpacing = _leftSpacing;
-                printer.PrintEmptyAsZero = false;
-
-                SudokuPrinter solvedPrinter = new SudokuPrinter(solvedGeneratedGrid);
-                solvedPrinter.LeftSpacing = _leftSpacing;
+                SudokuSolver solver = new SudokuSolver(generatedGrid);
 
                 Console.WriteLine("\n" + _leftSpacing + "Replacement: " + replacementValue + "%");
-                Console.WriteLine(printer.SmallPrint());
-                Console.WriteLine(_leftSpacing + "Solved: " + SudokuValidator.Validate(solvedGeneratedGrid));
-                Console.WriteLine(solvedPrinter.SmallPrint() + "\n\n");
+                sudokuPrinter(generatedGrid);
+
+                if (solve)
+                {
+                    solvedGeneratedGrid = solver.Solve();
+                }
+
+                Console.WriteLine("\n" + _leftSpacing + "Solved: " + SudokuValidator.Validate(solvedGeneratedGrid));
+                sudokuPrinter(solvedGeneratedGrid);
+                Console.WriteLine("\n\n");
             }
-
-            /*SudokuGrid grid = new SudokuGrid();
-            SudokuPrinter printer = new SudokuPrinter(grid);
-            printer.LeftSpacing += _leftSpacing;
-            SudokuSolver solver = new SudokuSolver(grid);
-
-            getSudoku(grid);
-
-            string print = printer.SmallPrint();
-            Console.WriteLine(print);
-
-            bool isValid = false;
-            try
-            {
-                SudokuGrid solvedGrid = solver.Solve(true);
-                isValid = SudokuValidator.Validate(solvedGrid);
-            }
-            catch (SudokuNotSolvableException e)
-            {
-                Console.WriteLine(e.Message);
-            }
-
-            Console.WriteLine(_leftSpacing + "Sudoku is solvable: " + isValid + "\n");
-            print = printer.SmallPrint();
-            Console.Write(print);
-            //print = solvedGridPrinter.SmallPrint();
-            //Console.WriteLine(print);*/
         }
 
-        private static void getSudoku(SudokuGrid grid)
+        private static void solveSudokuSlow(SudokuGrid grid)
         {
-            SudokuNumberBox[] row4 = grid.GetRow(4);
-            SudokuNumberBox[,] box2 = grid.GetSquare(2);
-            row4[3].Number = SudokuNumber.THREE;
-            row4[6].Number = SudokuNumber.FIVE;
-            box2[1, 1].Number = SudokuNumber.SEVEN;
-            box2[2, 1].Number = SudokuNumber.FOUR;
+            sudokuPrinter(grid);
+            Console.Write("\n" + _leftSpacing + "Press any key to start...");
+            Console.ReadKey();
+            Console.Clear();
+
+            SudokuSolver solver = new SudokuSolver(grid);
+            SudokuGrid solvedGrid = solver.Solve(solveSudokuSlowPrinterCb);
+            Console.WriteLine("\n" + _leftSpacing + "Solved: " + SudokuValidator.Validate(solvedGrid));
+        }
+
+        private static void solveSudokuSlowPrinterCb(SudokuGrid grid)
+        {
+            Console.CursorLeft = 0;
+            Console.CursorTop = 0;
+            sudokuPrinter(grid);
+        }
+
+        private static void sudokuPrinter(SudokuGrid grid)
+        {
+            SudokuPrinter printer = new SudokuPrinter(grid);
+            printer.LeftSpacing = _leftSpacing;
+            printer.PrintEmptyAsZero = false;
+            string print = printer.SmallPrint();
+            Console.Write(print);
         }
     }
 }
